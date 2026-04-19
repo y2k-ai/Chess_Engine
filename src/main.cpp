@@ -1,2 +1,9 @@
 #include "uci.h"
-int main() { uci_loop(); }
+#include "board.h"
+#include "magic.h"
+
+int main() {
+    Zobrist::init();
+    Magic::init();
+    uci_loop();
+}
