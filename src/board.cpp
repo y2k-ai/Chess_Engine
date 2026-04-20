@@ -224,3 +224,21 @@ void Board::unmake_move(Move m, const StateInfo& st) {
 
     update_occupancy();
 }
+
+void Board::make_null_move(StateInfo& st) {
+    st.ep_sq    = ep_sq;
+    st.halfmove = halfmove;
+    st.hash     = hash;
+    if (ep_sq != NO_SQ) hash ^= Zobrist::ep_keys[ep_sq % 8];
+    ep_sq = NO_SQ;
+    halfmove++;
+    side = Color(1 - side);
+    hash ^= Zobrist::side_key;
+}
+
+void Board::unmake_null_move(const StateInfo& st) {
+    side     = Color(1 - side);
+    ep_sq    = st.ep_sq;
+    halfmove = st.halfmove;
+    hash     = st.hash;
+}

@@ -26,6 +26,8 @@ struct Board {
     int  color_on(int sq) const;
     void make_move(Move m, StateInfo& st);
     void unmake_move(Move m, const StateInfo& st);
+    void make_null_move(StateInfo& st);
+    void unmake_null_move(const StateInfo& st);
 };
 
 namespace Zobrist {
