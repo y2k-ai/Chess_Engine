@@ -227,3 +227,76 @@ static int negamax(Board& b, int depth, int alpha, int beta, int ply, bool null_
     tt_store(b.hash, depth, best_score, flag, best_move);
     return best_score;
 }
+
+// ── Iterative deepening entry point ──────────────────────────────────────
+SearchResult search(Board& b, const SearchLimits& lim) {
+    search_start  = std::chrono::steady_clock::now();
+    time_out      = false;
+    stop_search.store(false, std::memory_order_relaxed);
+    nodes         = 0;
+
+    if (lim.movetime > 0) {
+        time_limit_ms = lim.movetime;
+    } else if (lim.wtime > 0 || lim.btime > 0) {
+        int my_time = (b.side == WHITE) ? lim.wtime : lim.btime;
+        int my_inc  = (b.side == WHITE) ? lim.winc  : lim.binc;
+        time_limit_ms = my_time / 20 + my_inc / 2;
+    } else {
+        time_limit_ms = 0;
+    }
+
+    int max_depth = (lim.depth > 0) ? lim.depth
+                  : (lim.infinite)  ? MAX_PLY
+                  : MAX_PLY;
+
+    memset(killers, 0, sizeof(killers));
+    memset(history, 0, sizeof(history));
+
+    SearchResult result;
+    int prev_score = 0;
+
+    for (int d = 1; d <= max_depth; d++) {
+        int alpha = -INF, beta = INF;
+        if (d > 1) { alpha = prev_score - 50; beta = prev_score + 50; }
+
+        int score;
+        while (true) {
+            score = negamax(b, d, alpha, beta, 0, true);
+            if (time_out) break;
+            if      (score <= alpha) { alpha -= 100; if (alpha < -INF/2) alpha = -INF; }
+            else if (score >= beta)  { beta  += 100; if (beta  >  INF/2) beta  =  INF; }
+            else break;
+        }
+
+        if (time_out && d > 1) break;
+
+        prev_score       = score;
+        result.score     = score;
+        result.depth     = d;
+        result.nodes     = nodes;
+        if (pv_len[0] > 0) result.best_move = pv[0][0];
+
+        int ms = elapsed_ms();
+        std::cout << "info depth " << d
+                  << " score cp " << score
+                  << " nodes " << nodes
+                  << " time " << ms
+                  << " pv";
+        for (int k = 0; k < pv_len[0]; k++) {
+            int from = move_from(pv[0][k]), to = move_to(pv[0][k]);
+            char mv[6];
+            mv[0] = 'a' + from % 8; mv[1] = '1' + from / 8;
+            mv[2] = 'a' + to   % 8; mv[3] = '1' + to   / 8;
+            int promo = move_promo(pv[0][k]);
+            if (move_flags(pv[0][k]) & FLAG_PROMO) {
+                mv[4] = "pnbrqk"[promo]; mv[5] = 0;
+            } else { mv[4] = 0; }
+            std::cout << " " << mv;
+        }
+        std::cout << "\n";
+        std::cout.flush();
+
+        if (time_limit_ms > 0 && elapsed_ms() >= time_limit_ms / 2) break;
+    }
+    return result;
+}
