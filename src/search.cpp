@@ -152,10 +152,10 @@ static int negamax(Board& b, int depth, int alpha, int beta, int ply, bool null_
         }
     }
 
-    if (depth <= 0) return quiescence(b, alpha, beta, ply);
-
     bool in_chk = in_check(b);
     if (in_chk) depth++;
+
+    if (depth <= 0) return quiescence(b, alpha, beta, ply);
 
     // Null-move pruning
     if (null_ok && !in_chk && !pv_node && depth >= 3) {
