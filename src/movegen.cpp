@@ -6,7 +6,7 @@ int king_sq(const Board& b, Color c) {
 }
 
 bool is_attacked(int sq, Color by, Bitboard occ, const Board& b) {
-    return (Magic::pawn_attacks[by][sq]           & b.pieces[by][PAWN])   ||
+    return (Magic::pawn_attacks[1-by][sq]          & b.pieces[by][PAWN])   ||
            (Magic::knight_attacks[sq]             & b.pieces[by][KNIGHT]) ||
            (Magic::king_attacks[sq]               & b.pieces[by][KING])   ||
            (Magic::bishop_attacks(sq, occ)        & (b.pieces[by][BISHOP] | b.pieces[by][QUEEN])) ||
