@@ -1,6 +1,7 @@
 #include "eval.h"
 
 static const int MAT[6] = { 100, 320, 330, 500, 900, 0 };
+static_assert(sizeof(MAT)/sizeof(MAT[0]) == NO_PIECE, "MAT size mismatch");
 
 // PST tables — white perspective, index 0=A1, 63=H8 (rank 1 first)
 // For black pieces use sq ^ 56 (mirror rank)
@@ -68,11 +69,12 @@ static const int PST_KING[64] = {
 static const int* PST[6] = {
     PST_PAWN, PST_KNIGHT, PST_BISHOP, PST_ROOK, PST_QUEEN, PST_KING
 };
+static_assert(sizeof(PST)/sizeof(PST[0]) == NO_PIECE, "PST size mismatch");
 
 int evaluate(const Board& b) {
     int score = 0;
     for (int c = 0; c < 2; c++) {
-        int sign = (c == WHITE) ? 1 : -1;
+        int sign = (c == b.side) ? 1 : -1;
         for (int p = 0; p < 6; p++) {
             Bitboard bb = b.pieces[c][p];
             while (bb) {
@@ -84,6 +86,6 @@ int evaluate(const Board& b) {
         if (popcount(b.pieces[c][BISHOP]) >= 2)
             score += sign * 30;
     }
-    score += (b.side == WHITE) ? 10 : -10;
-    return (b.side == WHITE) ? score : -score;
+    score += 10;
+    return score;
 }
