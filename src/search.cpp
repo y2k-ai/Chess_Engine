@@ -126,3 +126,104 @@ static int quiescence(Board& b, int alpha, int beta, int ply) {
     }
     return alpha;
 }
+
+// ── Negamax alpha-beta ────────────────────────────────────────────────────
+static int negamax(Board& b, int depth, int alpha, int beta, int ply, bool null_ok) {
+    if (ply >= MAX_PLY) return evaluate(b);
+
+    nodes++;
+    if ((nodes & 2047) == 0 && check_time()) { time_out = true; return 0; }
+
+    if (b.halfmove >= 100) return 0;
+
+    bool pv_node = (beta - alpha > 1);
+    pv_len[ply]  = ply;
+
+    // TT probe
+    TTEntry* tte = tt_probe(b.hash);
+    Move tt_move = 0;
+    if (tte->hash == b.hash) {
+        tt_move = tte->move;
+        if (!pv_node && tte->depth >= depth) {
+            int s = tte->score;
+            if (tte->flag == TT_EXACT) return s;
+            if (tte->flag == TT_LOWER && s >= beta)  return s;
+            if (tte->flag == TT_UPPER && s <= alpha) return s;
+        }
+    }
+
+    if (depth <= 0) return quiescence(b, alpha, beta, ply);
+
+    bool in_chk = in_check(b);
+    if (in_chk) depth++;
+
+    // Null-move pruning
+    if (null_ok && !in_chk && !pv_node && depth >= 3) {
+        Bitboard majors = b.pieces[b.side][KNIGHT] | b.pieces[b.side][BISHOP]
+                        | b.pieces[b.side][ROOK]   | b.pieces[b.side][QUEEN];
+        if (majors) {
+            int R = (depth >= 6) ? 4 : 3;
+            StateInfo st;
+            b.make_null_move(st);
+            int null_score = -negamax(b, depth - 1 - R, -beta, -beta + 1, ply + 1, false);
+            b.unmake_null_move(st);
+            if (!time_out && null_score >= beta) return beta;
+        }
+    }
+
+    Move list[320];
+    int  scores[320];
+    int  n = generate_moves(b, list);
+    score_moves(list, scores, n, tt_move, ply, b.side);
+
+    int  best_score = -INF;
+    Move best_move  = 0;
+    int  legal      = 0;
+    TTFlag flag     = TT_UPPER;
+
+    for (int i = 0; i < n; i++) {
+        pick_best(list, scores, i, n);
+        Move m = list[i];
+
+        StateInfo st;
+        b.make_move(m, st);
+        if (is_attacked(king_sq(b, Color(1 - b.side)), b.side, b.occupancy[2], b)) {
+            b.unmake_move(m, st);
+            continue;
+        }
+        legal++;
+
+        int score = -negamax(b, depth - 1, -beta, -alpha, ply + 1, true);
+        b.unmake_move(m, st);
+
+        if (time_out) return 0;
+
+        if (score > best_score) {
+            best_score = score;
+            best_move  = m;
+            pv[ply][ply] = m;
+            memcpy(pv[ply] + ply + 1, pv[ply + 1] + ply + 1,
+                   (pv_len[ply + 1] - ply - 1) * sizeof(Move));
+            pv_len[ply] = pv_len[ply + 1];
+
+            if (score > alpha) {
+                alpha = score;
+                flag  = TT_EXACT;
+                if (score >= beta) {
+                    if (!(move_flags(m) & FLAG_CAPTURE)) {
+                        killers[1][ply] = killers[0][ply];
+                        killers[0][ply] = m;
+                        history[b.side][move_piece(m)][move_to(m)] += depth * depth;
+                    }
+                    tt_store(b.hash, depth, score, TT_LOWER, m);
+                    return score;
+                }
+            }
+        }
+    }
+
+    if (legal == 0) return in_chk ? -(MATE - ply) : 0;
+
+    tt_store(b.hash, depth, best_score, flag, best_move);
+    return best_score;
+}
