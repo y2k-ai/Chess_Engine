@@ -83,3 +83,46 @@ static inline void pick_best(Move* list, int* scores, int idx, int n) {
         std::swap(scores[idx], scores[best]);
     }
 }
+
+// ── Quiescence search ─────────────────────────────────────────────────────
+static int quiescence(Board& b, int alpha, int beta, int ply) {
+    if (ply >= MAX_PLY) return evaluate(b);
+
+    nodes++;
+    if ((nodes & 2047) == 0 && check_time()) { time_out = true; return 0; }
+
+    int stand_pat = evaluate(b);
+    if (stand_pat >= beta) return stand_pat;
+    if (stand_pat > alpha) alpha = stand_pat;
+
+    pv_len[ply] = ply;
+
+    Move list[320];
+    int n = generate_captures(b, list);
+
+    int scores[320];
+    score_moves(list, scores, n, 0, ply, b.side);
+
+    for (int i = 0; i < n; i++) {
+        pick_best(list, scores, i, n);
+        Move m = list[i];
+
+        // Delta pruning
+        if (stand_pat + 900 + 200 < alpha && !(move_flags(m) & FLAG_PROMO))
+            continue;
+
+        StateInfo st;
+        b.make_move(m, st);
+        if (is_attacked(king_sq(b, Color(1 - b.side)), b.side, b.occupancy[2], b)) {
+            b.unmake_move(m, st);
+            continue;
+        }
+        int score = -quiescence(b, -beta, -alpha, ply + 1);
+        b.unmake_move(m, st);
+
+        if (time_out) return 0;
+        if (score >= beta) return score;
+        if (score > alpha) alpha = score;
+    }
+    return alpha;
+}
