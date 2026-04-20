@@ -22,9 +22,9 @@ static std::string move_to_str(Move m) {
 static Move str_to_move(const std::string& s, Board& b) {
     Move list[320];
     int n = generate_moves(b, list);
-    StateInfo st;
     for (int i = 0; i < n; i++) {
         Move m = list[i];
+        StateInfo st;
         b.make_move(m, st);
         bool legal = !is_attacked(king_sq(b, Color(1 - b.side)), b.side, b.occupancy[2], b);
         b.unmake_move(m, st);
