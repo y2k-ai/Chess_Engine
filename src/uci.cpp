@@ -11,8 +11,8 @@
 static std::string move_to_str(Move m) {
     int from = move_from(m), to = move_to(m);
     char buf[6];
-    buf[0] = 'a' + from % 8; buf[1] = '1' + from / 8;
-    buf[2] = 'a' + to   % 8; buf[3] = '1' + to   / 8;
+    buf[0] = (char)('a' + from % 8); buf[1] = (char)('1' + from / 8);
+    buf[2] = (char)('a' + to   % 8); buf[3] = (char)('1' + to   / 8);
     if (move_flags(m) & FLAG_PROMO) {
         buf[4] = "pnbrqk"[move_promo(m)]; buf[5] = 0;
     } else { buf[4] = 0; }

@@ -1,0 +1,5 @@
+build/
+.claude/
+*.exe
+*.obj
+*.pdb

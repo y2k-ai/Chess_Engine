@@ -285,8 +285,8 @@ SearchResult search(Board& b, const SearchLimits& lim) {
         for (int k = 0; k < pv_len[0]; k++) {
             int from = move_from(pv[0][k]), to = move_to(pv[0][k]);
             char mv[6];
-            mv[0] = 'a' + from % 8; mv[1] = '1' + from / 8;
-            mv[2] = 'a' + to   % 8; mv[3] = '1' + to   / 8;
+            mv[0] = (char)('a' + from % 8); mv[1] = (char)('1' + from / 8);
+            mv[2] = (char)('a' + to   % 8); mv[3] = (char)('1' + to   / 8);
             int promo = move_promo(pv[0][k]);
             if (move_flags(pv[0][k]) & FLAG_PROMO) {
                 mv[4] = "pnbrqk"[promo]; mv[5] = 0;
