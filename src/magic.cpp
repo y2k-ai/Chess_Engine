@@ -79,12 +79,14 @@ namespace Magic {
         }
 
         // Knight attacks
+        constexpr Bitboard FILE_AB = FILE_A | (FILE_A << 1); // files A and B
+        constexpr Bitboard FILE_GH = FILE_H | (FILE_H >> 1); // files G and H
         for (int sq = 0; sq < 64; sq++) {
             Bitboard b = sq_bb(sq);
             knight_attacks[sq] =
                 ((b << 17) & ~FILE_A) | ((b << 15) & ~FILE_H) |
-                ((b << 10) & ~(FILE_A | FILE_A << 1)) | ((b << 6) & ~(FILE_H | FILE_H >> 1)) |
-                ((b >> 6)  & ~(FILE_A | FILE_A << 1)) | ((b >> 10) & ~(FILE_H | FILE_H >> 1)) |
+                ((b << 10) & ~FILE_AB) | ((b << 6) & ~FILE_GH) |
+                ((b >> 6)  & ~FILE_AB) | ((b >> 10) & ~FILE_GH) |
                 ((b >> 15) & ~FILE_A) | ((b >> 17) & ~FILE_H);
         }
 
