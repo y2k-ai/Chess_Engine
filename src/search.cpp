@@ -331,5 +331,19 @@ SearchResult search(Board& b, const SearchLimits& lim) {
 
         if (time_limit_ms > 0 && elapsed_ms() >= time_limit_ms / 2) break;
     }
+
+    // Fallback: if time ran out before any PV was established, pick first legal move
+    if (result.best_move == 0) {
+        Move list[320];
+        int n = generate_moves(b, list);
+        for (int i = 0; i < n; i++) {
+            StateInfo st;
+            b.make_move(list[i], st);
+            bool legal = !is_attacked(king_sq(b, Color(1 - b.side)), b.side, b.occupancy[2], b);
+            b.unmake_move(list[i], st);
+            if (legal) { result.best_move = list[i]; break; }
+        }
+    }
+
     return result;
 }
