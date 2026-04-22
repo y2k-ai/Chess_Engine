@@ -217,9 +217,14 @@ static int negamax(Board& b, int depth, int alpha, int beta, int ply, bool null_
         bool reduced = !in_chk && legal >= 3 && depth >= 3 && quiet
                        && m != killers[0][ply] && m != killers[1][ply];
         if (reduced) new_depth--;
-        int score = -negamax(b, new_depth, -beta, -alpha, ply + 1, true);
-        if (!time_out && reduced && score > alpha)
-            score = -negamax(b, depth - 1, -beta, -alpha, ply + 1, true);
+        int score;
+        if (legal == 1) {
+            score = -negamax(b, new_depth, -beta, -alpha, ply + 1, true);
+        } else {
+            score = -negamax(b, new_depth, -alpha - 1, -alpha, ply + 1, true);
+            if (!time_out && score > alpha && score < beta)
+                score = -negamax(b, depth - 1, -beta, -alpha, ply + 1, true);
+        }
         hash_history_len--;
         b.unmake_move(m, st);
 
