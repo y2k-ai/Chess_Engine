@@ -100,11 +100,11 @@ static int quiescence(Board& b, int alpha, int beta, int ply) {
     nodes++;
     if ((nodes & 2047) == 0 && check_time()) { time_out = true; return 0; }
 
+    pv_len[ply] = ply;
+
     int stand_pat = evaluate(b);
     if (stand_pat >= beta) return stand_pat;
     if (stand_pat > alpha) alpha = stand_pat;
-
-    pv_len[ply] = ply;
 
     Move list[320];
     int n = generate_captures(b, list);
@@ -143,6 +143,8 @@ static int negamax(Board& b, int depth, int alpha, int beta, int ply, bool null_
     nodes++;
     if ((nodes & 2047) == 0 && check_time()) { time_out = true; return 0; }
 
+    pv_len[ply] = ply;
+
     if (b.halfmove >= 100) return 0;
 
     // Repetition detection: scan back same-side positions bounded by halfmove clock
@@ -154,7 +156,6 @@ static int negamax(Board& b, int depth, int alpha, int beta, int ply, bool null_
     }
 
     bool pv_node = (beta - alpha > 1);
-    pv_len[ply]  = ply;
 
     // TT probe
     TTEntry* tte = tt_probe(b.hash);
@@ -221,8 +222,9 @@ static int negamax(Board& b, int depth, int alpha, int beta, int ply, bool null_
             best_score = score;
             best_move  = m;
             pv[ply][ply] = m;
-            memcpy(pv[ply] + ply + 1, pv[ply + 1] + ply + 1,
-                   (pv_len[ply + 1] - ply - 1) * sizeof(Move));
+            int copy_len = pv_len[ply + 1] - ply - 1;
+            if (copy_len > 0)
+                memcpy(pv[ply] + ply + 1, pv[ply + 1] + ply + 1, copy_len * sizeof(Move));
             pv_len[ply] = pv_len[ply + 1];
 
             if (score > alpha) {
