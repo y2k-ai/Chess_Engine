@@ -296,9 +296,14 @@ SearchResult search(Board& b, const SearchLimits& lim) {
         if (pv_len[0] > 0) result.best_move = pv[0][0];
 
         int ms = elapsed_ms();
-        std::cout << "info depth " << d
-                  << " score cp " << score
-                  << " nodes " << nodes
+        std::cout << "info depth " << d;
+        if (std::abs(score) > MATE - MAX_PLY) {
+            int moves = (MATE - std::abs(score) + 1) / 2;
+            std::cout << " score mate " << (score > 0 ? moves : -moves);
+        } else {
+            std::cout << " score cp " << score;
+        }
+        std::cout << " nodes " << nodes
                   << " time " << ms
                   << " pv";
         for (int k = 0; k < pv_len[0]; k++) {
