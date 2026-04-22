@@ -35,6 +35,7 @@ static Move str_to_move(const std::string& s, Board& b) {
 
 // ── Position parser ───────────────────────────────────────────────────────
 static void parse_position(const std::string& line, Board& b) {
+    rep_clear();
     if (line.find("startpos") != std::string::npos) {
         b.load_fen(START_FEN);
     } else {
@@ -46,6 +47,7 @@ static void parse_position(const std::string& line, Board& b) {
             : line.substr(fen_pos + 4);
         b.load_fen(fen);
     }
+    rep_push(b.hash);
     size_t mv_pos = line.find(" moves ");
     if (mv_pos == std::string::npos) return;
     std::istringstream ss(line.substr(mv_pos + 7));
@@ -55,6 +57,7 @@ static void parse_position(const std::string& line, Board& b) {
         if (m) {
             StateInfo st;
             b.make_move(m, st);
+            rep_push(b.hash);
         }
     }
 }
@@ -98,6 +101,7 @@ void uci_loop() {
         } else if (line == "ucinewgame") {
             b.load_fen(START_FEN);
             tt_clear();
+            rep_clear();
         } else if (line.substr(0, 8) == "position") {
             parse_position(line, b);
         } else if (line.substr(0, 2) == "go") {
