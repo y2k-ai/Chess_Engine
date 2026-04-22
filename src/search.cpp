@@ -50,6 +50,8 @@ static Move     killers[2][MAX_PLY];
 static int      history[2][6][64];
 static Move     pv[MAX_PLY][MAX_PLY];
 static int      pv_len[MAX_PLY];
+static uint64_t hash_history[1024];
+static int      hash_history_len = 0;
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 static inline bool in_check(const Board& b) {
@@ -83,6 +85,13 @@ static inline void pick_best(Move* list, int* scores, int idx, int n) {
         std::swap(scores[idx], scores[best]);
     }
 }
+
+// ── Repetition history ────────────────────────────────────────────────────
+void rep_push(uint64_t hash) {
+    if (hash_history_len < 1024) hash_history[hash_history_len++] = hash;
+}
+
+void rep_clear() { hash_history_len = 0; }
 
 // ── Quiescence search ─────────────────────────────────────────────────────
 static int quiescence(Board& b, int alpha, int beta, int ply) {

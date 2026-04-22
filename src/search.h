@@ -36,3 +36,5 @@ extern std::atomic<bool> stop_search;
 
 SearchResult search(Board& b, const SearchLimits& limits);
 void         tt_clear();
+void         rep_push(uint64_t hash);
+void         rep_clear();
