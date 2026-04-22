@@ -145,6 +145,14 @@ static int negamax(Board& b, int depth, int alpha, int beta, int ply, bool null_
 
     if (b.halfmove >= 100) return 0;
 
+    // Repetition detection: scan back same-side positions bounded by halfmove clock
+    {
+        int start = hash_history_len - 3;
+        int bound = hash_history_len - 1 - b.halfmove;
+        for (int i = start; i >= bound && i >= 0; i -= 2)
+            if (hash_history[i] == b.hash) return 0;
+    }
+
     bool pv_node = (beta - alpha > 1);
     pv_len[ply]  = ply;
 
@@ -202,7 +210,9 @@ static int negamax(Board& b, int depth, int alpha, int beta, int ply, bool null_
         }
         legal++;
 
+        hash_history[hash_history_len++] = b.hash;
         int score = -negamax(b, depth - 1, -beta, -alpha, ply + 1, true);
+        hash_history_len--;
         b.unmake_move(m, st);
 
         if (time_out) return 0;
