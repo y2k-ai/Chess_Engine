@@ -264,8 +264,10 @@ static int negamax(Board& b, int depth, int alpha, int beta, int ply, bool null_
         if (static_eval != -INF && depth <= 2
             && !(move_flags(m) & (FLAG_CAPTURE | FLAG_PROMO))
             && m != killers[0][ply] && m != killers[1][ply]
-            && static_eval + FP_MARGIN[depth] <= alpha)
+            && static_eval + FP_MARGIN[depth] <= alpha) {
+            b.unmake_move(m, st);
             continue;
+        }
 
         hash_history[hash_history_len++] = b.hash;
         int new_depth = depth - 1;
