@@ -1,4 +1,5 @@
 #include "search.h"
+#include "magic.h"
 #include "eval.h"
 #include "movegen.h"
 #include <algorithm>
@@ -93,6 +94,52 @@ void rep_push(uint64_t hash) {
 
 void rep_clear() { hash_history_len = 0; }
 
+// ── Static Exchange Evaluation ────────────────────────────────────────────
+static const int SEE_VAL[7] = { 100, 320, 330, 500, 900, 20000, 0 };
+
+static Bitboard all_attackers(const Board& b, int sq, Bitboard occ) {
+    return (Magic::pawn_attacks[BLACK][sq] & b.pieces[WHITE][PAWN])
+         | (Magic::pawn_attacks[WHITE][sq] & b.pieces[BLACK][PAWN])
+         | (Magic::knight_attacks[sq] & (b.pieces[WHITE][KNIGHT] | b.pieces[BLACK][KNIGHT]))
+         | (Magic::bishop_attacks(sq, occ) & (b.pieces[WHITE][BISHOP] | b.pieces[BLACK][BISHOP]
+                                            | b.pieces[WHITE][QUEEN]  | b.pieces[BLACK][QUEEN]))
+         | (Magic::rook_attacks(sq, occ)   & (b.pieces[WHITE][ROOK]   | b.pieces[BLACK][ROOK]
+                                            | b.pieces[WHITE][QUEEN]  | b.pieces[BLACK][QUEEN]))
+         | (Magic::king_attacks[sq] & (b.pieces[WHITE][KING] | b.pieces[BLACK][KING]));
+}
+
+static int see(const Board& b, Move m) {
+    int to     = move_to(m);
+    int from   = move_from(m);
+    int target = move_captured(m);
+    if (target == NO_PIECE) return 0;
+
+    int      gain[32], d = 0;
+    int      atkr_piece = move_piece(m);
+    Bitboard occ = b.occupancy[2] ^ sq_bb(from);
+
+    gain[d] = SEE_VAL[target];
+    Bitboard attadef = all_attackers(b, to, occ) & occ;
+    Color    side    = Color(1 - b.side);
+
+    while (true) {
+        d++;
+        gain[d] = SEE_VAL[atkr_piece] - gain[d - 1];
+        if (std::max(-gain[d - 1], gain[d]) < 0) break;
+        Bitboard lva = 0; atkr_piece = NO_PIECE;
+        for (int p = PAWN; p <= KING; p++) {
+            Bitboard s = attadef & b.pieces[side][p];
+            if (s) { lva = s & -s; atkr_piece = p; break; }
+        }
+        if (!lva) break;
+        occ     ^= lva;
+        attadef  = all_attackers(b, to, occ) & occ;
+        side     = Color(1 - side);
+    }
+    while (--d) gain[d - 1] = std::max(-gain[d], gain[d - 1]);
+    return gain[0];
+}
+
 // ── Quiescence search ─────────────────────────────────────────────────────
 static int quiescence(Board& b, int alpha, int beta, int ply) {
     if (ply >= MAX_PLY) return evaluate(b);
@@ -116,8 +163,7 @@ static int quiescence(Board& b, int alpha, int beta, int ply) {
         pick_best(list, scores, i, n);
         Move m = list[i];
 
-        // Delta pruning
-        if (stand_pat + 900 + 200 < alpha && !(move_flags(m) & FLAG_PROMO))
+        if (!(move_flags(m) & FLAG_PROMO) && see(b, m) < 0)
             continue;
 
         StateInfo st;
