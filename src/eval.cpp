@@ -116,7 +116,7 @@ int evaluate(const Board& b) {
 
                 // Squares strictly ahead of this pawn (toward enemy back rank)
                 Bitboard ahead = (c == WHITE)
-                    ? (~0ULL << (8 * (r + 1)))
+                    ? (r < 7 ? (~0ULL << (8 * (r + 1))) : 0ULL)
                     : ((1ULL << (8 * r)) - 1);
 
                 // Passed pawn: no enemy pawns on same+adjacent files ahead
@@ -133,7 +133,7 @@ int evaluate(const Board& b) {
 
             // Doubled pawns: more than one pawn on same file
             for (int f2 = 0; f2 < 8; f2++) {
-                int cnt = popcount(b.pieces[c][PAWN] & FILE_BB[f2]);
+                int cnt = popcount(own_pawns & FILE_BB[f2]);
                 if (cnt > 1)
                     score -= sign * 15 * (cnt - 1);
             }
