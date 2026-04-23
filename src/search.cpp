@@ -235,6 +235,8 @@ static int negamax(Board& b, int depth, int alpha, int beta, int ply, bool null_
         }
     }
 
+    int static_eval = (!in_chk && depth <= 2 && !pv_node) ? evaluate(b) : -INF;
+
     Move list[320];
     int  scores[320];
     int  n = generate_moves(b, list);
@@ -256,6 +258,14 @@ static int negamax(Board& b, int depth, int alpha, int beta, int ply, bool null_
             continue;
         }
         legal++;
+
+        // Futility pruning
+        static const int FP_MARGIN[3] = { 0, 100, 300 };
+        if (static_eval != -INF && depth <= 2
+            && !(move_flags(m) & (FLAG_CAPTURE | FLAG_PROMO))
+            && m != killers[0][ply] && m != killers[1][ply]
+            && static_eval + FP_MARGIN[depth] <= alpha)
+            continue;
 
         hash_history[hash_history_len++] = b.hash;
         int new_depth = depth - 1;
