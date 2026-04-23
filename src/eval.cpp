@@ -87,6 +87,59 @@ int evaluate(const Board& b) {
         if (popcount(b.pieces[c][BISHOP]) >= 2)
             score += sign * 30;
     }
+
+    // Pawn structure evaluation
+    {
+        static const Bitboard FILE_BB[8] = {
+            0x0101010101010101ULL, 0x0202020202020202ULL,
+            0x0404040404040404ULL, 0x0808080808080808ULL,
+            0x1010101010101010ULL, 0x2020202020202020ULL,
+            0x4040404040404040ULL, 0x8080808080808080ULL,
+        };
+        static const int PASSED_BONUS[8] = { 0, 10, 20, 30, 50, 80, 120, 0 };
+
+        for (int c = 0; c < 2; c++) {
+            int sign = (c == b.side) ? 1 : -1;
+            Color opp = Color(1 - c);
+            Bitboard own_pawns = b.pieces[c][PAWN];
+
+            // Passed and isolated pawn detection (per pawn)
+            Bitboard pawns = own_pawns;
+            while (pawns) {
+                int sq = lsb(pawns); pop_lsb(pawns);
+                int f = sq % 8, r = sq / 8;
+                int rel_rank = (c == WHITE) ? r : (7 - r);
+
+                Bitboard adj_files = FILE_BB[f];
+                if (f > 0) adj_files |= FILE_BB[f - 1];
+                if (f < 7) adj_files |= FILE_BB[f + 1];
+
+                // Squares strictly ahead of this pawn (toward enemy back rank)
+                Bitboard ahead = (c == WHITE)
+                    ? (~0ULL << (8 * (r + 1)))
+                    : ((1ULL << (8 * r)) - 1);
+
+                // Passed pawn: no enemy pawns on same+adjacent files ahead
+                if (!(b.pieces[opp][PAWN] & adj_files & ahead))
+                    score += sign * PASSED_BONUS[rel_rank];
+
+                // Isolated pawn: no friendly pawns on adjacent files (any rank)
+                Bitboard adj_only = 0;
+                if (f > 0) adj_only |= FILE_BB[f - 1];
+                if (f < 7) adj_only |= FILE_BB[f + 1];
+                if (!(own_pawns & adj_only))
+                    score -= sign * 20;
+            }
+
+            // Doubled pawns: more than one pawn on same file
+            for (int f2 = 0; f2 < 8; f2++) {
+                int cnt = popcount(b.pieces[c][PAWN] & FILE_BB[f2]);
+                if (cnt > 1)
+                    score -= sign * 15 * (cnt - 1);
+            }
+        }
+    }
+
     // King safety — middlegame only
     // Phase: Q=4, R=2, B=1, N=1 per piece, max 24 (full material)
     static const int PHASE_W[6] = { 0, 1, 1, 2, 4, 0 };
