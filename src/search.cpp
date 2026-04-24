@@ -4,11 +4,24 @@
 #include "movegen.h"
 #include <algorithm>
 #include <chrono>
+#include <cmath>
 #include <cstring>
 #include <iostream>
 
 // ── Stop flag ──────────────────────────────────────────────────────────────
 std::atomic<bool> stop_search{false};
+
+// ── LMR reduction table ────────────────────────────────────────────────────
+// LMR reduction table: LMR_TABLE[depth][legal] = floor(log(depth)*log(legal)/2)
+static int LMR_TABLE[MAX_PLY][MAX_PLY];
+static const bool lmr_table_init = []() {
+    for (int d = 0; d < MAX_PLY; d++)
+        for (int l = 0; l < MAX_PLY; l++)
+            LMR_TABLE[d][l] = (d > 0 && l > 0)
+                ? std::max(0, (int)std::round(std::log((double)d) * std::log((double)l) / 2.0))
+                : 0;
+    return true;
+}();
 
 // ── Transposition table ───────────────────────────────────────────────────
 static TTEntry tt[TT_SIZE];
@@ -274,7 +287,10 @@ static int negamax(Board& b, int depth, int alpha, int beta, int ply, bool null_
         bool quiet = !(move_flags(m) & (FLAG_CAPTURE | FLAG_PROMO));
         bool reduced = !in_chk && legal >= 3 && depth >= 3 && quiet
                        && m != killers[0][ply] && m != killers[1][ply];
-        if (reduced) new_depth--;
+        if (reduced) {
+            int r = LMR_TABLE[std::min(depth, MAX_PLY - 1)][std::min(legal, MAX_PLY - 1)];
+            new_depth = std::max(1, new_depth - r);
+        }
         int score;
         if (legal == 1) {
             score = -negamax(b, new_depth, -beta, -alpha, ply + 1, true);
