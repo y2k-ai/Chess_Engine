@@ -178,7 +178,7 @@ static int quiescence(Board& b, int alpha, int beta, int ply) {
         pick_best(list, scores, i, n);
         Move m = list[i];
 
-        if (!(move_flags(m) & FLAG_PROMO) && see(b, m) < 0)
+        if (!(move_flags(m) & FLAG_PROMO) && scores[i] < 1000000)
             continue;
 
         StateInfo st;
