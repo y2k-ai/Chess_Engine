@@ -188,6 +188,22 @@ int evaluate(const Board& b) {
         }
     }
 
+    // Rook on open/semi-open file
+    {
+        for (int c = 0; c < 2; c++) {
+            int sign = (c == b.side) ? 1 : -1;
+            Bitboard bb = b.pieces[c][ROOK];
+            while (bb) {
+                int sq = lsb(bb); pop_lsb(bb);
+                Bitboard file_mask = 0x0101010101010101ULL << (sq % 8);
+                if (!(b.pieces[WHITE][PAWN] & file_mask) && !(b.pieces[BLACK][PAWN] & file_mask))
+                    score += sign * 20;
+                else if (!(b.pieces[c][PAWN] & file_mask))
+                    score += sign * 10;
+            }
+        }
+    }
+
     // King safety — middlegame only
     if (phase >= 8) {
         static const int ATK_PEN[8] = { 0, 0, 20, 40, 70, 110, 160, 200 };
