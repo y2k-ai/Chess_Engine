@@ -62,6 +62,7 @@ static bool check_time() {
 static uint64_t nodes;
 static Move     killers[2][MAX_PLY];
 static int      history[2][6][64];
+static Move     countermoves[6][64];
 static Move     pv[MAX_PLY][MAX_PLY];
 static int      pv_len[MAX_PLY];
 static uint64_t hash_history[1024];
@@ -75,7 +76,8 @@ static inline bool in_check(const Board& b) {
 static int see(const Board& b, Move m); // forward declaration
 
 static void score_moves(const Board& b, const Move* list, int* scores, int n,
-                        Move tt_move, int ply, Color us) {
+                        Move tt_move, int ply, Color us, Move prev_move) {
+    Move cm = (prev_move) ? countermoves[move_piece(prev_move)][move_to(prev_move)] : 0;
     for (int i = 0; i < n; i++) {
         Move m = list[i];
         int f = move_flags(m);
@@ -87,6 +89,8 @@ static void score_moves(const Board& b, const Move* list, int* scores, int n,
             scores[i] = 900000;
         else if (m == killers[1][ply])
             scores[i] = 800000;
+        else if (m == cm && cm != 0)
+            scores[i] = 750000;
         else
             scores[i] = history[us][move_piece(m)][move_to(m)];
     }
@@ -156,7 +160,7 @@ static int see(const Board& b, Move m) {
 }
 
 // ── Quiescence search ─────────────────────────────────────────────────────
-static int quiescence(Board& b, int alpha, int beta, int ply) {
+static int quiescence(Board& b, int alpha, int beta, int ply, Move prev_move = 0) {
     if (ply >= MAX_PLY) return evaluate(b);
 
     nodes++;
@@ -172,7 +176,7 @@ static int quiescence(Board& b, int alpha, int beta, int ply) {
     int n = generate_captures(b, list);
 
     int scores[320];
-    score_moves(b, list, scores, n, 0, ply, b.side);
+    score_moves(b, list, scores, n, 0, ply, b.side, 0);
 
     for (int i = 0; i < n; i++) {
         pick_best(list, scores, i, n);
@@ -198,7 +202,7 @@ static int quiescence(Board& b, int alpha, int beta, int ply) {
 }
 
 // ── Negamax alpha-beta ────────────────────────────────────────────────────
-static int negamax(Board& b, int depth, int alpha, int beta, int ply, bool null_ok) {
+static int negamax(Board& b, int depth, int alpha, int beta, int ply, bool null_ok, Move prev_move = 0) {
     if (ply >= MAX_PLY) return evaluate(b);
 
     nodes++;
@@ -234,7 +238,7 @@ static int negamax(Board& b, int depth, int alpha, int beta, int ply, bool null_
     bool in_chk = in_check(b);
     if (in_chk) depth++;
 
-    if (depth <= 0) return quiescence(b, alpha, beta, ply);
+    if (depth <= 0) return quiescence(b, alpha, beta, ply, prev_move);
 
     // Null-move pruning
     if (null_ok && !in_chk && !pv_node && depth >= 3) {
@@ -255,7 +259,7 @@ static int negamax(Board& b, int depth, int alpha, int beta, int ply, bool null_
     Move list[320];
     int  scores[320];
     int  n = generate_moves(b, list);
-    score_moves(b, list, scores, n, tt_move, ply, b.side);
+    score_moves(b, list, scores, n, tt_move, ply, b.side, prev_move);
 
     int  best_score = -INF;
     Move best_move  = 0;
@@ -295,11 +299,11 @@ static int negamax(Board& b, int depth, int alpha, int beta, int ply, bool null_
         }
         int score;
         if (legal == 1) {
-            score = -negamax(b, new_depth, -beta, -alpha, ply + 1, true);
+            score = -negamax(b, new_depth, -beta, -alpha, ply + 1, true, m);
         } else {
-            score = -negamax(b, new_depth, -alpha - 1, -alpha, ply + 1, true);
+            score = -negamax(b, new_depth, -alpha - 1, -alpha, ply + 1, true, m);
             if (!time_out && score > alpha && score < beta)
-                score = -negamax(b, depth - 1, -beta, -alpha, ply + 1, true);
+                score = -negamax(b, depth - 1, -beta, -alpha, ply + 1, true, m);
         }
         hash_history_len--;
         b.unmake_move(m, st);
@@ -323,6 +327,7 @@ static int negamax(Board& b, int depth, int alpha, int beta, int ply, bool null_
                         killers[1][ply] = killers[0][ply];
                         killers[0][ply] = m;
                         history[b.side][move_piece(m)][move_to(m)] += depth * depth;
+                        if (prev_move) countermoves[move_piece(prev_move)][move_to(prev_move)] = m;
                     }
                     tt_store(b.hash, depth, score, TT_LOWER, m);
                     return score;
@@ -360,6 +365,7 @@ SearchResult search(Board& b, const SearchLimits& lim) {
 
     memset(killers, 0, sizeof(killers));
     memset(history, 0, sizeof(history));
+    memset(countermoves, 0, sizeof(countermoves));
 
     SearchResult result;
     int prev_score = 0;
