@@ -140,6 +140,33 @@ int evaluate(const Board& b) {
         }
     }
 
+    // Mobility evaluation — bonus per reachable square, own pieces excluded
+    {
+        static const int MOB_BONUS[6] = { 0, 4, 3, 2, 1, 0 };
+        Bitboard occ = b.occupancy[2];
+        for (int c = 0; c < 2; c++) {
+            int sign = (c == b.side) ? 1 : -1;
+            Bitboard own = b.occupancy[c];
+            Bitboard bb;
+
+            bb = b.pieces[c][KNIGHT];
+            while (bb) { int sq = lsb(bb); pop_lsb(bb);
+                score += sign * MOB_BONUS[KNIGHT] * popcount(Magic::knight_attacks[sq] & ~own); }
+
+            bb = b.pieces[c][BISHOP];
+            while (bb) { int sq = lsb(bb); pop_lsb(bb);
+                score += sign * MOB_BONUS[BISHOP] * popcount(Magic::bishop_attacks(sq, occ) & ~own); }
+
+            bb = b.pieces[c][ROOK];
+            while (bb) { int sq = lsb(bb); pop_lsb(bb);
+                score += sign * MOB_BONUS[ROOK] * popcount(Magic::rook_attacks(sq, occ) & ~own); }
+
+            bb = b.pieces[c][QUEEN];
+            while (bb) { int sq = lsb(bb); pop_lsb(bb);
+                score += sign * MOB_BONUS[QUEEN] * popcount(Magic::queen_attacks(sq, occ) & ~own); }
+        }
+    }
+
     // King safety — middlegame only
     // Phase: Q=4, R=2, B=1, N=1 per piece, max 24 (full material)
     static const int PHASE_W[6] = { 0, 1, 1, 2, 4, 0 };
