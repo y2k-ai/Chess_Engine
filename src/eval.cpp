@@ -142,7 +142,7 @@ int evaluate(const Board& b) {
 
                 // Passed pawn: no enemy pawns on same+adjacent files ahead
                 if (!(b.pieces[opp][PAWN] & adj_files & ahead))
-                    score += sign * PASSED_BONUS[rel_rank];
+                    score += sign * PASSED_BONUS[rel_rank] * (48 - phase) / 24;
 
                 // Isolated pawn: no friendly pawns on adjacent files (any rank)
                 Bitboard adj_only = 0;
