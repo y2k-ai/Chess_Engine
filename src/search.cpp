@@ -12,7 +12,7 @@
 std::atomic<bool> stop_search{false};
 
 // ── LMR reduction table ────────────────────────────────────────────────────
-// LMR reduction table: LMR_TABLE[depth][legal] = floor(log(depth)*log(legal)/2)
+// LMR reduction table: LMR_TABLE[depth][legal] = round(log(depth)*log(legal)/2)
 static int LMR_TABLE[MAX_PLY][MAX_PLY];
 static const bool lmr_table_init = []() {
     for (int d = 0; d < MAX_PLY; d++)
