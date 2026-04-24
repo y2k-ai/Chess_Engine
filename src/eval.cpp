@@ -66,6 +66,16 @@ static const int PST_KING[64] = {
     -30,-40,-40,-50,-50,-40,-40,-30,
     -30,-40,-40,-50,-50,-40,-40,-30,
 };
+static const int PST_KING_EG[64] = {
+    -50,-30,-30,-30,-30,-30,-30,-50,
+    -30,-20,-10,-10,-10,-10,-20,-30,
+    -30,-10, 20, 30, 30, 20,-10,-30,
+    -30,-10, 30, 40, 40, 30,-10,-30,
+    -30,-10, 30, 40, 40, 30,-10,-30,
+    -30,-10, 20, 30, 30, 20,-10,-30,
+    -30,-20,-10,-10,-10,-10,-20,-30,
+    -50,-30,-30,-30,-30,-30,-30,-50,
+};
 
 static const int* PST[6] = {
     PST_PAWN, PST_KNIGHT, PST_BISHOP, PST_ROOK, PST_QUEEN, PST_KING
@@ -73,6 +83,14 @@ static const int* PST[6] = {
 static_assert(sizeof(PST)/sizeof(PST[0]) == NO_PIECE, "PST size mismatch");
 
 int evaluate(const Board& b) {
+    // Phase: Q=4, R=2, B=1, N=1 per piece, max 24 (full material = middlegame)
+    static const int PHASE_W[6] = { 0, 1, 1, 2, 4, 0 };
+    int phase = 0;
+    for (int c = 0; c < 2; c++)
+        for (int p = 0; p < 6; p++)
+            phase += PHASE_W[p] * popcount(b.pieces[c][p]);
+    if (phase > 24) phase = 24;
+
     int score = 0;
     for (int c = 0; c < 2; c++) {
         int sign = (c == b.side) ? 1 : -1;
@@ -81,7 +99,10 @@ int evaluate(const Board& b) {
             while (bb) {
                 int sq = lsb(bb); pop_lsb(bb);
                 int pst_sq = (c == WHITE) ? sq : (sq ^ 56);
-                score += sign * (MAT[p] + PST[p][pst_sq]);
+                int pst_val = (p == KING)
+                    ? (PST_KING[pst_sq] * phase + PST_KING_EG[pst_sq] * (24 - phase)) / 24
+                    : PST[p][pst_sq];
+                score += sign * (MAT[p] + pst_val);
             }
         }
         if (popcount(b.pieces[c][BISHOP]) >= 2)
@@ -168,14 +189,6 @@ int evaluate(const Board& b) {
     }
 
     // King safety — middlegame only
-    // Phase: Q=4, R=2, B=1, N=1 per piece, max 24 (full material)
-    static const int PHASE_W[6] = { 0, 1, 1, 2, 4, 0 };
-    int phase = 0;
-    for (int c = 0; c < 2; c++)
-        for (int p = 0; p < 6; p++)
-            phase += PHASE_W[p] * popcount(b.pieces[c][p]);
-    if (phase > 24) phase = 24;
-
     if (phase >= 8) {
         static const int ATK_PEN[8] = { 0, 0, 20, 40, 70, 110, 160, 200 };
         for (int c = 0; c < 2; c++) {
