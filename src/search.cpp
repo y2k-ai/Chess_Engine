@@ -72,7 +72,9 @@ static inline bool in_check(const Board& b) {
     return is_attacked(king_sq(b, b.side), Color(1 - b.side), b.occupancy[2], b);
 }
 
-static void score_moves(const Move* list, int* scores, int n,
+static int see(const Board& b, Move m); // forward declaration
+
+static void score_moves(const Board& b, const Move* list, int* scores, int n,
                         Move tt_move, int ply, Color us) {
     for (int i = 0; i < n; i++) {
         Move m = list[i];
@@ -80,7 +82,7 @@ static void score_moves(const Move* list, int* scores, int n,
         if (m == tt_move)
             scores[i] = 2000000;
         else if (f & FLAG_CAPTURE)
-            scores[i] = 1000000 + move_captured(m) * 100 - move_piece(m);
+            scores[i] = 1000000 + see(b, m);
         else if (m == killers[0][ply])
             scores[i] = 900000;
         else if (m == killers[1][ply])
@@ -170,7 +172,7 @@ static int quiescence(Board& b, int alpha, int beta, int ply) {
     int n = generate_captures(b, list);
 
     int scores[320];
-    score_moves(list, scores, n, 0, ply, b.side);
+    score_moves(b, list, scores, n, 0, ply, b.side);
 
     for (int i = 0; i < n; i++) {
         pick_best(list, scores, i, n);
@@ -253,7 +255,7 @@ static int negamax(Board& b, int depth, int alpha, int beta, int ply, bool null_
     Move list[320];
     int  scores[320];
     int  n = generate_moves(b, list);
-    score_moves(list, scores, n, tt_move, ply, b.side);
+    score_moves(b, list, scores, n, tt_move, ply, b.side);
 
     int  best_score = -INF;
     Move best_move  = 0;
