@@ -84,6 +84,7 @@ static_assert(sizeof(PST)/sizeof(PST[0]) == NO_PIECE, "PST size mismatch");
 
 // Endgame material values (CPW tapered)
 static const int MAT_EG[6] = { 94, 281, 297, 512, 936, 0 };
+static_assert(sizeof(MAT_EG)/sizeof(MAT_EG[0]) == NO_PIECE, "MAT_EG size mismatch");
 
 // Endgame PST tables — same index convention as MG tables (A1=0, white perspective)
 static const int PST_PAWN_EG[64] = {
