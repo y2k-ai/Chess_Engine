@@ -82,6 +82,67 @@ static const int* PST[6] = {
 };
 static_assert(sizeof(PST)/sizeof(PST[0]) == NO_PIECE, "PST size mismatch");
 
+// Endgame material values (CPW tapered)
+static const int MAT_EG[6] = { 94, 281, 297, 512, 936, 0 };
+
+// Endgame PST tables — same index convention as MG tables (A1=0, white perspective)
+static const int PST_PAWN_EG[64] = {
+     0,  0,  0,  0,  0,  0,  0,  0,
+    -6, -4,  1,  1,  1,  1, -4, -6,
+    -6, -4,  1,  5,  5,  1, -4, -6,
+    -6, -4,  5, 10, 10,  5, -4, -6,
+    -3,  2, 12, 16, 16, 12,  2, -3,
+     8, 14, 20, 32, 32, 20, 14,  8,
+    20, 25, 35, 45, 45, 35, 25, 20,
+     0,  0,  0,  0,  0,  0,  0,  0,
+};
+static const int PST_KNIGHT_EG[64] = {
+    -50,-40,-30,-30,-30,-30,-40,-50,
+    -40,-20,  0,  0,  0,  0,-20,-40,
+    -30,  0, 10, 15, 15, 10,  0,-30,
+    -30,  5, 15, 20, 20, 15,  5,-30,
+    -30,  0, 15, 20, 20, 15,  0,-30,
+    -30,  5, 10, 15, 15, 10,  5,-30,
+    -40,-20,  0,  5,  5,  0,-20,-40,
+    -50,-40,-30,-30,-30,-30,-40,-50,
+};
+static const int PST_BISHOP_EG[64] = {
+    -20,-10,-10,-10,-10,-10,-10,-20,
+    -10,  5,  0,  0,  0,  0,  5,-10,
+    -10, 10, 10, 10, 10, 10, 10,-10,
+    -10,  0, 10, 10, 10, 10,  0,-10,
+    -10,  5,  5, 10, 10,  5,  5,-10,
+    -10,  0,  5, 10, 10,  5,  0,-10,
+    -10,  0,  0,  0,  0,  0,  0,-10,
+    -20,-10,-10,-10,-10,-10,-10,-20,
+};
+static const int PST_ROOK_EG[64] = {
+     0,  0,  0,  0,  0,  0,  0,  0,
+     5, 10, 10, 10, 10, 10, 10,  5,
+    -5,  0,  0,  0,  0,  0,  0, -5,
+    -5,  0,  0,  0,  0,  0,  0, -5,
+    -5,  0,  0,  0,  0,  0,  0, -5,
+    -5,  0,  0,  0,  0,  0,  0, -5,
+    -5,  0,  0,  0,  0,  0,  0, -5,
+     0,  0,  0,  5,  5,  0,  0,  0,
+};
+static const int PST_QUEEN_EG[64] = {
+    -20,-10,-10, -5, -5,-10,-10,-20,
+    -10,  0,  5,  0,  0,  0,  0,-10,
+    -10,  5,  5,  5,  5,  5,  0,-10,
+      0,  0,  5,  5,  5,  5,  0, -5,
+     -5,  0,  5,  5,  5,  5,  0, -5,
+    -10,  0,  5,  5,  5,  5,  0,-10,
+    -10,  0,  0,  0,  0,  0,  0,-10,
+    -20,-10,-10, -5, -5,-10,-10,-20,
+};
+
+static const int* PST_EG[6] = {
+    PST_PAWN_EG, PST_KNIGHT_EG, PST_BISHOP_EG,
+    PST_ROOK_EG, PST_QUEEN_EG, PST_KING_EG
+};
+static_assert(sizeof(PST_EG)/sizeof(PST_EG[0]) == NO_PIECE, "PST_EG size mismatch");
+
 int evaluate(const Board& b) {
     // Phase: Q=4, R=2, B=1, N=1 per piece, max 24 (full material = middlegame)
     static const int PHASE_W[6] = { 0, 1, 1, 2, 4, 0 };
