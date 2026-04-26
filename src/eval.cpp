@@ -160,10 +160,9 @@ int evaluate(const Board& b) {
             while (bb) {
                 int sq = lsb(bb); pop_lsb(bb);
                 int pst_sq = (c == WHITE) ? sq : (sq ^ 56);
-                int pst_val = (p == KING)
-                    ? (PST_KING[pst_sq] * phase + PST_KING_EG[pst_sq] * (24 - phase)) / 24
-                    : PST[p][pst_sq];
-                score += sign * (MAT[p] + pst_val);
+                int pst_val = (PST[p][pst_sq] * phase + PST_EG[p][pst_sq] * (24 - phase)) / 24;
+                int mat_val = (MAT[p]         * phase + MAT_EG[p]          * (24 - phase)) / 24;
+                score += sign * (mat_val + pst_val);
             }
         }
         if (popcount(b.pieces[c][BISHOP]) >= 2)
