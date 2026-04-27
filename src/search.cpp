@@ -267,7 +267,37 @@ static int negamax(Board& b, int depth, int alpha, int beta, int ply, bool null_
         }
     }
 
-    int static_eval = (!in_chk && depth <= 2 && !pv_node) ? evaluate(b) : -INF;
+    // Probcut: if a capture is good enough at reduced depth, prune
+    if (!pv_node && !in_chk && depth >= 5 && abs(beta) < MATE - 100) {
+        int pc_beta   = beta + 200;
+        int pc_static = evaluate(b);
+        Move cap_list[256];
+        int  cap_n = generate_captures(b, cap_list);
+        int  cap_scores[256];
+        score_moves(b, cap_list, cap_scores, cap_n, tt_move, ply, b.side, prev_move);
+        for (int ci = 0; ci < cap_n; ci++) {
+            pick_best(cap_list, cap_scores, ci, cap_n);
+            Move m = cap_list[ci];
+            if (see(b, m) < pc_beta - pc_static) continue;
+            StateInfo st;
+            b.make_move(m, st);
+            if (is_attacked(king_sq(b, Color(1 - b.side)), b.side, b.occupancy[2], b)) {
+                b.unmake_move(m, st);
+                continue;
+            }
+            int pc_score = -negamax(b, depth - 4, -pc_beta, -pc_beta + 1, ply + 1, false, m);
+            b.unmake_move(m, st);
+            if (!time_out && pc_score >= pc_beta) return pc_score;
+        }
+    }
+
+    int static_eval = (!in_chk && !pv_node && depth <= 7) ? evaluate(b) : -INF;
+
+    // Reverse futility pruning: if static eval is well above beta, prune early
+    if (static_eval != -INF && depth >= 1 && depth <= 7) {
+        if (static_eval - depth * 70 >= beta)
+            return static_eval;
+    }
 
     Move list[320];
     int  scores[320];
