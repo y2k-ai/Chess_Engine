@@ -338,6 +338,8 @@ static int negamax(Board& b, int depth, int alpha, int beta, int ply, bool null_
                        && m != killers[0][ply] && m != killers[1][ply];
         if (reduced) {
             int r = LMR_TABLE[std::min(depth, MAX_PLY - 1)][std::min(legal, MAX_PLY - 1)];
+            r -= history[b.side][move_piece(m)][move_to(m)] / 8192;
+            r = std::max(0, std::min(r, depth - 1));
             new_depth = std::max(1, new_depth - r);
         }
         int score;
@@ -369,7 +371,18 @@ static int negamax(Board& b, int depth, int alpha, int beta, int ply, bool null_
                     if (!(move_flags(m) & FLAG_CAPTURE)) {
                         killers[1][ply] = killers[0][ply];
                         killers[0][ply] = m;
-                        history[b.side][move_piece(m)][move_to(m)] += depth * depth;
+                        int bonus = depth * depth;
+                        history[b.side][move_piece(m)][move_to(m)] =
+                            std::max(-16384, std::min(16384,
+                                history[b.side][move_piece(m)][move_to(m)] + bonus));
+                        for (int mi = 0; mi < i; mi++) {
+                            Move pm = list[mi];
+                            if (pm == skip_move) continue;
+                            if (move_flags(pm) & (FLAG_CAPTURE | FLAG_PROMO)) continue;
+                            history[b.side][move_piece(pm)][move_to(pm)] =
+                                std::max(-16384, std::min(16384,
+                                    history[b.side][move_piece(pm)][move_to(pm)] - bonus));
+                        }
                         if (prev_move) countermoves[move_piece(prev_move)][move_to(prev_move)] = m;
                     }
                     tt_store(b.hash, depth, score, TT_LOWER, m);
