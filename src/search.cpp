@@ -164,7 +164,7 @@ static int quiescence(Board& b, int alpha, int beta, int ply, Move prev_move = 0
     if (ply >= MAX_PLY) return evaluate(b);
 
     nodes++;
-    if ((nodes & 2047) == 0 && check_time()) { time_out = true; return 0; }
+    if ((nodes & 255) == 0 && check_time()) { time_out = true; return 0; }
 
     pv_len[ply] = ply;
 
@@ -206,7 +206,7 @@ static int negamax(Board& b, int depth, int alpha, int beta, int ply, bool null_
     if (ply >= MAX_PLY) return evaluate(b);
 
     nodes++;
-    if ((nodes & 2047) == 0 && check_time()) { time_out = true; return 0; }
+    if ((nodes & 255) == 0 && check_time()) { time_out = true; return 0; }
 
     pv_len[ply] = ply;
 
@@ -360,8 +360,8 @@ SearchResult search(Board& b, const SearchLimits& lim) {
     }
 
     int max_depth = (lim.depth > 0) ? lim.depth
-                  : (lim.infinite)  ? MAX_PLY
-                  : MAX_PLY;
+                  : (lim.infinite)  ? 24
+                  : 24;
 
     memset(killers, 0, sizeof(killers));
     memset(history, 0, sizeof(history));
