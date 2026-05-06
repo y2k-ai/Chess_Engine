@@ -303,6 +303,5 @@ int evaluate(const Board& b) {
         }
     }
 
-    score += 10;
     return score;
 }
