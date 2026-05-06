@@ -5,7 +5,7 @@
 constexpr int INF     = 1000000;
 constexpr int MATE    = 100000;
 constexpr int MAX_PLY = 128;
-constexpr int TT_SIZE = 1 << 22;
+constexpr int TT_SIZE = 1 << 23;
 
 enum TTFlag : uint8_t { TT_NONE = 0, TT_EXACT, TT_LOWER, TT_UPPER };
 
