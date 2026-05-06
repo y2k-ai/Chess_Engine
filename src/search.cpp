@@ -2,6 +2,7 @@
 #include "magic.h"
 #include "eval.h"
 #include "movegen.h"
+#include "tablebase.h"
 #include <algorithm>
 #include <chrono>
 #include <cmath>
@@ -248,6 +249,12 @@ static int negamax(Board& b, int depth, int alpha, int beta, int ply, bool null_
         }
     }
 
+    // Tablebase probe
+    int tb_score = tb_probe_wdl(b);
+    if (tb_score != INT_MIN) {
+        return tb_score;
+    }
+
     bool in_chk = in_check(b);
     if (in_chk) depth++;
 
@@ -377,7 +384,6 @@ static int negamax(Board& b, int depth, int alpha, int beta, int ply, bool null_
                                 history[b.side][move_piece(m)][move_to(m)] + bonus));
                         for (int mi = 0; mi < i; mi++) {
                             Move pm = list[mi];
-                            if (pm == skip_move) continue;
                             if (move_flags(pm) & (FLAG_CAPTURE | FLAG_PROMO)) continue;
                             history[b.side][move_piece(pm)][move_to(pm)] =
                                 std::max(-16384, std::min(16384,

@@ -21,6 +21,7 @@ set(ENGINE_SOURCES
     src/search.cpp
     src/eval.cpp
     src/uci.cpp
+    src/tablebase.cpp
 )
 
 add_executable(chess-engine src/main.cpp ${ENGINE_SOURCES})

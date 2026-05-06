@@ -3,6 +3,7 @@
 #include "magic.h"
 #include "movegen.h"
 #include "search.h"
+#include "tablebase.h"
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -81,6 +82,34 @@ static void parse_go(const std::string& line, Board& b) {
     std::cout.flush();
 }
 
+// ── Setoption parser ─────────────────────────────────────────────────────
+static void parse_setoption(const std::string& line) {
+    std::istringstream ss(line);
+    std::string tok, name, value;
+
+    ss >> tok; // skip "setoption"
+    ss >> tok; // skip "name"
+
+    // Read option name (could be multiple words)
+    while (ss >> tok && tok != "value") {
+        if (!name.empty()) name += " ";
+        name += tok;
+    }
+
+    // Read option value (everything after "value")
+    if (!tok.empty() && tok == "value") {
+        while (ss >> tok) {
+            if (!value.empty()) value += " ";
+            value += tok;
+        }
+    }
+
+    // Handle options
+    if (name == "TablebaseDirectory") {
+        tb_init(value);
+    }
+}
+
 // ── Main UCI loop ─────────────────────────────────────────────────────────
 void uci_loop() {
     Board b;
@@ -93,6 +122,7 @@ void uci_loop() {
         if (line == "uci") {
             std::cout << "id name ChessEngine\n"
                       << "id author Chess Engine Developer\n"
+                      << "option name TablebaseDirectory type string default <syzygy>\n"
                       << "uciok\n";
             std::cout.flush();
         } else if (line == "isready") {
@@ -102,6 +132,8 @@ void uci_loop() {
             b.load_fen(START_FEN);
             tt_clear();
             rep_clear();
+        } else if (line.substr(0, 9) == "setoption") {
+            parse_setoption(line);
         } else if (line.substr(0, 8) == "position") {
             parse_position(line, b);
         } else if (line.substr(0, 2) == "go") {
