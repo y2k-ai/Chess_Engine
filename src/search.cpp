@@ -89,10 +89,23 @@ static void score_moves(const Board& b, const Move* list, int* scores, int n,
             scores[i] = 900000;
         else if (m == killers[1][ply])
             scores[i] = 800000;
-        else if (m == cm && cm != 0)
-            scores[i] = 750000;
-        else
-            scores[i] = history[us][move_piece(m)][move_to(m)];
+        else {
+            int h = history[us][move_piece(m)][move_to(m)];
+            int bonus = 0;
+            int to = move_to(m);
+            int piece = move_piece(m);
+
+            if (piece == QUEEN) bonus += 500;
+            if (piece == ROOK) bonus += 300;
+            if (piece == BISHOP) bonus += 100;
+            if (piece == KNIGHT) bonus += 100;
+            if (piece == KING) bonus += 200;
+
+            int center_dist = std::max(std::abs((to % 8) - 3), std::abs((to / 8) - 3));
+            bonus += (7 - center_dist) * 50;
+
+            scores[i] = h + bonus;
+        }
     }
 }
 
