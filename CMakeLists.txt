@@ -22,6 +22,7 @@ set(ENGINE_SOURCES
     src/eval.cpp
     src/uci.cpp
     src/tablebase.cpp
+    src/book.cpp
 )
 
 add_executable(chess-engine src/main.cpp ${ENGINE_SOURCES})
@@ -29,3 +30,8 @@ target_include_directories(chess-engine PRIVATE src)
 
 add_executable(perft tests/perft.cpp ${ENGINE_SOURCES})
 target_include_directories(perft PRIVATE src)
+
+# Book validation tests
+add_executable(book_test tests/book_test.cpp ${ENGINE_SOURCES})
+target_include_directories(book_test PRIVATE src)
+add_test(NAME book_test COMMAND book_test)
