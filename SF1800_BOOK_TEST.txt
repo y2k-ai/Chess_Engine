@@ -1,0 +1,51 @@
+SF1800 Regression Test - Book Support
+======================================
+Date: 2026-05-07
+Commit: 55d9f65 (feat: implement Syzygy tablebase file loading)
+Engine: xadrez-book (with ./op/komodo.bin)
+Opponent: Stockfish 1800
+TC: 1+0.1
+Games: 10 (5 rounds, 2 games each)
+
+Results: 5 wins, 5 losses, 0 draws
+Win %: 50%
+
+Baseline (without book): ≥65%
+Current (with book): 50%
+
+Status: FAIL - Performance regression detected
+
+Analysis:
+---------
+The engine shows a 50% score against Stockfish 1800, which is BELOW the required 65% baseline.
+This represents a significant performance regression.
+
+Game Pattern:
+- Engine wins when playing White: 5/5 (100%)
+- Engine loses when playing Black: 5/5 (0%)
+
+This pattern suggests the opening book may not be providing sufficient advantage to overcome
+a fundamental engine weakness in the opening or early middlegame when playing Black. The engine
+appears to be completely failing against Stockfish's Black play, losing every single game.
+
+Engine Status:
+---------
+Based on memory logs (debug_findings_2026_05_06.md, engine_bugs_found.md, project_progress.md):
+- The engine has known critical bugs affecting move ordering and evaluation
+- Previous testing (Phase 8) showed 0W-10L against SF2400
+- Even with opening book enabled, the engine cannot overcome fundamental weaknesses in:
+  1. Quiet move ordering (history table initialized to zero)
+  2. Evaluation confidence in won positions
+  3. Mate-finding ability (broken by commits bf41e43 and 644727c)
+
+This test result confirms that opening book integration alone cannot fix the engine's core
+performance issues.
+
+Next Steps Required:
+---------
+Before opening book can demonstrate value, core engine bugs must be fixed:
+1. Restore working baseline (commit cd467cc) as reference
+2. Fix move ordering for quiet moves (history table heuristics)
+3. Debug evaluation function and position assessment
+4. Implement killer move heuristics for better pruning
+5. Re-test against SF1800 after core fixes

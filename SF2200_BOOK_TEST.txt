@@ -1,0 +1,16 @@
+SF2200 Regression Test - Book Support
+======================================
+Date: 2026-05-07
+Commit: 55d9f65
+Engine: xadrez-book (with ./op/komodo.bin)
+Opponent: Stockfish 2200
+TC: 1+0.1
+Games: 10
+
+Results: 5 wins, 5 losses, 0 draws
+Win %: 50%
+
+Baseline (without book): ≥50%
+Current (with book): 50%
+
+Status: PASS

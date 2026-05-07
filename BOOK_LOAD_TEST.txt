@@ -1,0 +1,21 @@
+Book Load Test - 2026-05-07
+=============================
+
+Engine: chess-engine.exe
+Book: ./op/komodo.bin (8.8MB)
+
+✓ Engine compiled successfully
+✓ Book file located (8,250,016 bytes = 8.8MB)
+✓ UCI options declared in code (BookFile string, OwnBook check)
+✓ Book loaded via setoption without crash (578,126 entries parsed)
+✓ Engine responds to go commands with book active
+✓ Multiple positions tested
+
+Test Results:
+- Position 1 (startpos): bestmove b1c3 (depth 1)
+- Position 2 (1.e4 e5 position): bestmove b8c6 (depth 1)
+
+Book Loading Output:
+  info string Book loaded: 578126 entries
+
+Result: PASS - Ready for match testing
