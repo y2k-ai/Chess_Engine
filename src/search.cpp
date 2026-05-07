@@ -1,8 +1,8 @@
 #include "search.h"
+#include "book.h"
 #include "magic.h"
 #include "eval.h"
 #include "movegen.h"
-#include "tablebase.h"
 #include <algorithm>
 #include <chrono>
 #include <cmath>
@@ -249,12 +249,6 @@ static int negamax(Board& b, int depth, int alpha, int beta, int ply, bool null_
         }
     }
 
-    // Tablebase probe
-    int tb_score = tb_probe_wdl(b);
-    if (tb_score != INT_MIN) {
-        return tb_score;
-    }
-
     bool in_chk = in_check(b);
     if (in_chk) depth++;
 
@@ -345,8 +339,6 @@ static int negamax(Board& b, int depth, int alpha, int beta, int ply, bool null_
                        && m != killers[0][ply] && m != killers[1][ply];
         if (reduced) {
             int r = LMR_TABLE[std::min(depth, MAX_PLY - 1)][std::min(legal, MAX_PLY - 1)];
-            r -= history[b.side][move_piece(m)][move_to(m)] / 8192;
-            r = std::max(0, std::min(r, depth - 1));
             new_depth = std::max(1, new_depth - r);
         }
         int score;
@@ -378,17 +370,7 @@ static int negamax(Board& b, int depth, int alpha, int beta, int ply, bool null_
                     if (!(move_flags(m) & FLAG_CAPTURE)) {
                         killers[1][ply] = killers[0][ply];
                         killers[0][ply] = m;
-                        int bonus = depth * depth;
-                        history[b.side][move_piece(m)][move_to(m)] =
-                            std::max(-16384, std::min(16384,
-                                history[b.side][move_piece(m)][move_to(m)] + bonus));
-                        for (int mi = 0; mi < i; mi++) {
-                            Move pm = list[mi];
-                            if (move_flags(pm) & (FLAG_CAPTURE | FLAG_PROMO)) continue;
-                            history[b.side][move_piece(pm)][move_to(pm)] =
-                                std::max(-16384, std::min(16384,
-                                    history[b.side][move_piece(pm)][move_to(pm)] - bonus));
-                        }
+                        history[b.side][move_piece(m)][move_to(m)] += depth * depth;
                         if (prev_move) countermoves[move_piece(prev_move)][move_to(prev_move)] = m;
                     }
                     tt_store(b.hash, depth, score, TT_LOWER, m);
@@ -431,6 +413,14 @@ SearchResult search(Board& b, const SearchLimits& lim) {
 
     SearchResult result;
     int prev_score = 0;
+
+    // Check opening book first
+    Move book_move = book_probe(b);
+    if (book_move != 0) {
+        result.best_move = book_move;
+        result.score = 0;
+        return result;
+    }
 
     for (int d = 1; d <= max_depth; d++) {
         int alpha = -INF, beta = INF;
